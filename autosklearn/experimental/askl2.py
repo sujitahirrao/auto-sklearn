@@ -15,46 +15,51 @@ import sklearn
 import autosklearn
 from autosklearn.classification import AutoSklearnClassifier
 import autosklearn.experimental.selector
-from autosklearn.metrics import Scorer
+from autosklearn.metrics import Scorer, balanced_accuracy, roc_auc, log_loss
 
+metrics = (balanced_accuracy, roc_auc, log_loss)
+selector_files = {}
 this_directory = pathlib.Path(__file__).resolve().parent
-training_data_file = this_directory / 'askl2_training_data.json'
-with open(training_data_file) as fh:
-    training_data = json.load(fh)
-    fh.seek(0)
-    m = hashlib.md5()
-    m.update(fh.read().encode('utf8'))
-training_data_hash = m.hexdigest()[:10]
-sklearn_version = sklearn.__version__
-autosklearn_version = autosklearn.__version__
-selector_file = pathlib.Path(
-    os.environ.get(
-        'XDG_CACHE_HOME',
-        '~/.cache/auto-sklearn/askl2_selector_%s_%s_%s.pkl'
-        % (autosklearn_version, sklearn_version, training_data_hash),
-    )
-).expanduser()
-metafeatures = pd.DataFrame(training_data['metafeatures'])
-y_values = np.array(training_data['y_values'])
-strategies = training_data['strategies']
-minima_for_methods = training_data['minima_for_methods']
-maxima_for_methods = training_data['maxima_for_methods']
-if not selector_file.exists():
-    selector = autosklearn.experimental.selector.OneVSOneSelector(
-        configuration=training_data['configuration'],
-        default_strategy_idx=strategies.index('RF_SH-eta4-i_holdout_iterative_es_if'),
-        rng=1,
-    )
-    selector.fit(
-        X=metafeatures,
-        y=y_values,
-        methods=strategies,
-        minima=minima_for_methods,
-        maxima=maxima_for_methods,
-    )
-    selector_file.parent.mkdir(exist_ok=True, parents=True)
-    with open(selector_file, 'wb') as fh:
-        pickle.dump(selector, fh)
+for metric in metrics:
+    training_data_file = this_directory / metric.name / 'askl2_training_data.json'
+    with open(training_data_file) as fh:
+        training_data = json.load(fh)
+        fh.seek(0)
+        m = hashlib.md5()
+        m.update(fh.read().encode('utf8'))
+    training_data_hash = m.hexdigest()[:10]
+    sklearn_version = sklearn.__version__
+    autosklearn_version = autosklearn.__version__
+    selector_file = pathlib.Path(
+        os.environ.get(
+            'XDG_CACHE_HOME',
+            '~/.cache/auto-sklearn/askl2_selector_%s_%s_%s_%s.pkl'
+            % (autosklearn_version, sklearn_version, metric.name, training_data_hash),
+        )
+    ).expanduser()
+    selector_files[metric.name] = selector_file
+    metafeatures = pd.DataFrame(training_data['metafeatures'])
+    y_values = np.array(training_data['y_values'])
+    strategies = training_data['strategies']
+    minima_for_methods = training_data['minima_for_methods']
+    maxima_for_methods = training_data['maxima_for_methods']
+    if not selector_file.exists():
+        selector = autosklearn.experimental.selector.OneVSOneSelector(
+            configuration=training_data['configuration'],
+            default_strategy_idx=strategies.index('RF_SH-eta4-i_holdout_iterative_es_if'),
+            rng=1,
+            n_estimators=500,
+        )
+        selector.fit(
+            X=metafeatures,
+            y=y_values,
+            methods=strategies,
+            minima=minima_for_methods,
+            maxima=maxima_for_methods,
+        )
+        selector_file.parent.mkdir(exist_ok=True, parents=True)
+        with open(selector_file, 'wb') as fh:
+            pickle.dump(selector, fh)
 
 
 class SmacObjectCallback:
@@ -326,10 +331,13 @@ class AutoSklearn2Classifier(AutoSklearnClassifier):
     def fit(self, X, y,
             X_test=None,
             y_test=None,
-            metric=None,
             feat_type=None,
             dataset_name=None):
 
+        if self._metric in metrics:
+            selector_file = selector_files[self._metric.name]
+        else:
+            selector_file = selector_files['balanced_accuracy']
         with open(selector_file, 'rb') as fh:
             selector = pickle.load(fh)
 
@@ -384,7 +392,9 @@ class AutoSklearn2Classifier(AutoSklearnClassifier):
         else:
             resampling_strategy_kwargs = None
 
-        portfolio_file = this_directory / 'askl2_portfolios' / ('%s.json' % automl_policy)
+        portfolio_file = (
+            this_directory / self._metric.name / 'askl2_portfolios' / ('%s.json' % automl_policy)
+        )
         with open(portfolio_file) as fh:
             portfolio_json = json.load(fh)
         portfolio = portfolio_json['portfolio']
