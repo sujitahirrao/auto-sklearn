@@ -1,4 +1,4 @@
 """Version information."""
 
 # The following line *must* be the last in the module, exactly as formatted:
-__version__ = "0.12.1_askl2_metadata"
+__version__ = "0.12.0_askl2_metadata"
