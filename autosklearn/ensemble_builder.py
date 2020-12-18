@@ -155,7 +155,7 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
     def build_ensemble(
         self,
         dask_client: dask.distributed.Client,
-        pynisher_context: str = 'spawn',
+        pynisher_context: str = 'forkserver',
         unit_test: bool = False
     ) -> None:
 
@@ -573,7 +573,7 @@ class EnsembleBuilder(object):
         end_at: Optional[float] = None,
         time_buffer=5,
         return_predictions: bool = False,
-        pynisher_context: str = 'spawn',  # only change for unit testing!
+        pynisher_context: str = 'forkserver',  # only change for unit testing!
     ):
 
         if time_left is None and end_at is None:
