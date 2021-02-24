@@ -12,6 +12,52 @@
 Releases
 ========
 
+Version 0.12.3
+==============
+
+* FIX #1061: Fixes a bug where the model could not be printed in a jupyter notebook.
+* FIX #1075: Fixes a bug where the ensemble builder would wrongly prune good models for loss
+  functions (i.e. functions that need to be minimized such as ``logloss`` or ``mean_squared_error``.
+* FIX #1079: Fixes a bug where ``AutoMLClassifier.cv_results`` and ``AutoMLRegressor.cv_results``
+  could rank results in opposite order for loss functions (i.e. functions that need to be minimized
+  such as ``logloss`` or ``mean_squared_error``.
+* FIX: Fixes a bug in offline meta-data generation that could lead to a deadlock.
+* MAINT #1076: Uses the correct multiprocessing context for computing meta-features
+* MAINT: Cleanup readme and main directory
+
+Contributors v0.12.3
+********************
+
+* Matthias Feurer
+* ROHIT AGARWAL
+* Francisco Rivera
+
+========
+Releases
+========
+
+Version 0.12.2
+==============
+
+* ADD #1045: New example demonstrating how to log multiple metrics during a run of Auto-sklearn.
+* DOC #1052: Add links to mybinder
+* DOC #1059: Improved the example on manually starting workers for Auto-sklearn.
+* FIX #1046: Add the final result of the ensemble builder to the ensemble builder trajectory.
+* MAINT: Two log outputs of level warning about metadata were turned reduced to the info loglevel
+  as they are not actionable for the user.
+* MAINT #1062: Use threads for local dask workers and forkserver to start subprocesses to reduce
+  overhead.
+* MAINT #1053: Remove the restriction to guard single-core Auto-sklearn by
+  ``__main__ == "__name__"`` again.
+
+Contributors v0.12.2
+********************
+
+* Matthias Feurer
+* ROHIT AGARWAL
+* Francisco Rivera
+* Katharina Eggensperger
+
 Version 0.12.1
 ==============
 
